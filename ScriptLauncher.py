@@ -1,6 +1,6 @@
 #import PyQt5
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTabWidget, QDesktopWidget, QLabel, QListWidget, QPushButton, QTextEdit, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTabWidget, QDesktopWidget, QLabel, QListWidget, QPushButton, QTextEdit, QFileDialog, QMessageBox, QInputDialog
 from PyQt5.QtGui import QIcon, QFont#, QFontDatabase
 from PyQt5.QtCore import Qt, QSize
 import sys
@@ -15,10 +15,14 @@ class Window(QWidget):
         # Set window layout
 
         self.setInitUI()
+        
 
+
+        self.DLPath = ''
+        
         # Create dummy layout (temp solution)
-        topLayout = QVBoxLayout()
-        self.setLayout(topLayout)
+        self.topLayout = QVBoxLayout()
+        self.setLayout(self.topLayout)
         self.optionsPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Tests')
         # Create tab switcher widget
         self.tabWrapper = QTabWidget()
@@ -29,7 +33,9 @@ class Window(QWidget):
         self.makeStartPage()
         self.makeResultsPage()
         # Add tab switcher widget to dummy layout
-        topLayout.addChildWidget(self.tabWrapper)
+        self.topLayout.addChildWidget(self.tabWrapper)
+
+        self.getDLPath()
 
         # Show Window
         self.show()
@@ -44,6 +50,18 @@ class Window(QWidget):
         self.setWindowTitle("Script Launcher")
         self.setWindowIcon(QIcon(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icon.png')))
         self._center()
+    
+    def getDLPath(self):
+        DLPathFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dlpath.txt')
+        file = open(DLPathFile, "r+")
+        if len(file.readlines()) < 1:
+            self._getDLPathHelper()
+        else:
+            temp = file.read().strip()
+            if not os.path.isfile(temp):
+                self._getDLPathHelper()
+        self.DLPath = file.readline().rstrip()
+            
 
     def makeStartPage(self): # Called by __init__ 
         '''Set up Main Page'''
@@ -65,6 +83,20 @@ class Window(QWidget):
         self.tabWrapper.addTab(self.resultsPage, 'Results')
     
     '''SUB-FUNCTIONS'''
+    def _getDLPathHelper(self):
+        wr = QInputDialog.getText(self.tabWrapper, "Docklight Path", "Input Docklight Scripting path:")[0]
+        if not wr.endswith('Docklight_Scripting.exe') and not os.path.isfile(wr):
+            msg = QMessageBox(self.tabWrapper)
+            msg.setWindowTitle("Error")
+            msg.setText("Please input a valid path")
+            msg.setIcon(QMessageBox.Warning)
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.setDefaultButton(QMessageBox.Ok)
+            msg.exec()
+            self._getDLPathHelper()
+        else:
+            file = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dlpath.txt'), "r+")
+            file.write(wr)
     def _switchPage(self, targetPage): # General purpose tool function 
         '''Switches to target page'''
         self.tabWrapper.setCurrentWidget(targetPage)
@@ -172,12 +204,16 @@ class Window(QWidget):
     def __launchScriptHandler(self, item): # Called by _makeScriptList on events 
         '''Verifies whether selected script exists and launches or displays error accordingly'''
         self._switchPage(self.resultsPage)
-        if not item:
-            test = self.options[self.listWidget.selectedItems()[0].text()]
-        else:
+        if not item: # handle selected
+            try:
+                test = self.options[self.listWidget.selectedItems()[0].text()]
+            except IndexError:
+                # show error
+                pass
+        else: # handle double-click
             test = self.options[item.text()]
         try: # to launch script
-            pass
+            os.system(f'{self.DLPath} -r {test}')
         except: # display error
             pass
         else: # display success message
