@@ -173,6 +173,7 @@ class Window(QWidget):
                 self.pathInput.setPlaceholderText('Input DockLight Scripting path')
             else:
                 self.pathInput.setPlaceholderText('Valid path entered')
+                self.DLPath = txt
                 self.pathInput.setText(txt)
         # Create save button
         self.pathInputButton = QPushButton('Save', self.settingsPage)
@@ -205,19 +206,22 @@ class Window(QWidget):
     def __launchScriptHandler(self, item): # Called by _makeScriptList on events 
         '''Verifies whether selected script exists and launches or displays error accordingly'''
         self._switchPage(self.resultsPage)
+        target = ''
         if not item:
-            test = self.options[self.listWidget.selectedItems()[0].text()]
+            testDir = self.options[self.listWidget.selectedItems()[0].text()]
         else:
-            test = self.options[item.text()]
-        try: # to launch script
-            pass
-        except: # display error
-            pass
-        else: # display success message
-            pass
+            testDir = self.options[item.text()]
+        testDir = list(os.walk(testDir))[0]
+        for file in testDir[2]:
+            if file.endswith('.pts'):
+                target = os.path.join(testDir[0], file)
+                break
+        
+        subprocess.Popen(f'"{self.DLPath}" -r "{target}"', shell=True)
+        
     def __folderView(self): # Called by _makeAddSubButtons
         '''Opens file explorer in options path'''
-        subprocess.Popen(f'explorer {self.optionsPath}', shell=True)
+        subprocess.Popen(f'explorer "{self.optionsPath}"', shell=True)
     def __addFile(self): # Called by _makeAddSubButtons
         '''Adds selected folder to directory'''
         folder = QFileDialog.getExistingDirectory(self, 'Select Folder')
@@ -268,6 +272,7 @@ class Window(QWidget):
                     f.truncate(0)
                     f.write(self.pathInput.text())
                     self.pathInput.setPlaceholderText('Valid path saved')
+                    self.DLPath = self.pathInput.text()
                 else:
                     self.pathInput.setPlaceholderText('Invalid path. Please enter the correct path.')
                     self.pathInput.clear()
