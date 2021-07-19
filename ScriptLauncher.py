@@ -206,7 +206,8 @@ class Window(QWidget):
     def __launchScriptHandler(self, item): # Called by _makeScriptList on events 
         '''Verifies whether selected script exists and launches or displays error accordingly'''
         self._switchPage(self.resultsPage)
-        target = ''
+        script = ''
+        proj = ''
         if not item:
             testDir = self.options[self.listWidget.selectedItems()[0].text()]
         else:
@@ -214,10 +215,13 @@ class Window(QWidget):
         testDir = list(os.walk(testDir))[0]
         for file in testDir[2]:
             if file.endswith('.pts'):
-                target = os.path.join(testDir[0], file)
+                script = os.path.join(testDir[0], file)
+            if file.endswith('.ptp'):
+                proj = os.path.join(testDir[0], file)
+            if script != '' and proj != '':
                 break
         
-        subprocess.Popen(f'"{self.DLPath}" -r "{target}"', shell=True)
+        subprocess.Popen(f'"{self.DLPath}" -r -m -i "{proj}" "{script}"', shell=True)
         
     def __folderView(self): # Called by _makeAddSubButtons
         '''Opens file explorer in options path'''
