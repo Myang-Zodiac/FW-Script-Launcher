@@ -221,7 +221,7 @@ class Window(QWidget):
             if script != '' and proj != '':
                 break
         
-        subprocess.Popen(f'"{self.DLPath}" -r -m -i "{proj}" "{script}"', shell=True)
+        subprocess.Popen(f'"{self.DLPath}" -r "{proj}" "{script}"', shell=True) # add -m -i to launch/run with no footprint
         
     def __folderView(self): # Called by _makeAddSubButtons
         '''Opens file explorer in options path'''
