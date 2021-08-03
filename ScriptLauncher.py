@@ -1,6 +1,6 @@
 #import PyQt5
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTabWidget, QDesktopWidget, QLabel, QListWidget, QPushButton, QTextEdit, QFileDialog, QMessageBox, QLineEdit
+from PyQt5.QtWidgets import QApplication, QButtonGroup, QRadioButton, QWidget, QVBoxLayout, QTabWidget, QDesktopWidget, QLabel, QListWidget, QPushButton, QTextEdit, QFileDialog, QMessageBox, QLineEdit
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt, QSize
 import sys
@@ -71,6 +71,7 @@ class Window(QWidget):
         self.settingsPage = QWidget()
 
         self._makePathInput()
+        self._makeRunSettings()
 
         self.tabWrapper.addTab(self.settingsPage, 'Settings')
     
@@ -166,6 +167,11 @@ class Window(QWidget):
         self.pathInput = QLineEdit(self.settingsPage)
         self.pathInput.resize(600,25)
         self.pathInput.move(15,15)
+        # Create save button
+        self.pathInputButton = QPushButton('Save', self.settingsPage)
+        self.pathInputButton.setFont(QFont('Calibri', 9))
+        self.pathInputButton.resize(100,25)
+        self.pathInputButton.move(620, 15)
         # Ready storage file for reading
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets/dlpath.txt'), "r+") as f:
             txt = f.read().rstrip()
@@ -175,13 +181,26 @@ class Window(QWidget):
                 self.pathInput.setPlaceholderText('Valid path entered')
                 self.DLPath = txt
                 self.pathInput.setText(txt)
-        # Create save button
-        self.pathInputButton = QPushButton('Save', self.settingsPage)
-        self.pathInputButton.setFont(QFont('Calibri', 9))
-        self.pathInputButton.resize(100,25)
-        self.pathInputButton.move(620, 15)
+                self.pathInputButton.setText('Replace')
         # Call function to save data
         self.pathInputButton.clicked.connect(self.__handlePath)
+    def _makeRunSettings(self):
+        '''Creates selection dropdown to determine how to run script'''
+        self.runTypeLabel = QLabel('Select run type:', self.settingsPage)
+        self.runTypeLabel.resize(500,20)
+        self.runTypeLabel.move(15,50)
+
+        self.runTypeSelect = QButtonGroup()
+        self.manualRadio = QRadioButton('Manual', self.settingsPage)
+        self.manualRadio.move(15,75)
+        self.autoRadio = QRadioButton('Auto', self.settingsPage)
+        self.autoRadio.move(15,100)
+        self.hideRadio = QRadioButton('Hide Window', self.settingsPage)
+        self.hideRadio.move(15,125)
+        self.runTypeSelect.addButton(self.manualRadio)
+        self.runTypeSelect.addButton(self.autoRadio)
+        self.runTypeSelect.addButton(self.hideRadio)
+        self.manualRadio.setChecked(True)
 
 
 
@@ -221,7 +240,13 @@ class Window(QWidget):
             if script != '' and proj != '':
                 break
         
-        subprocess.Popen(f'"{self.DLPath}" -r "{proj}" "{script}"', shell=True) # add -m -i to launch/run with no footprint
+        runSettings = ''
+        if self.autoRadio.isChecked():
+            runSettings += '-r'
+        elif self.hideRadio.isChecked():
+            runSettings += '-r -i'
+
+        subprocess.Popen(f'"{self.DLPath}" {runSettings} "{proj}" "{script}"', shell=True) # add -m -i to launch/run with no footprint
         
     def __folderView(self): # Called by _makeAddSubButtons
         '''Opens file explorer in options path'''
@@ -277,6 +302,7 @@ class Window(QWidget):
                     f.write(self.pathInput.text())
                     self.pathInput.setPlaceholderText('Valid path saved')
                     self.DLPath = self.pathInput.text()
+                    self.pathInputButton.setText('Replace')
                 else:
                     self.pathInput.setPlaceholderText('Invalid path. Please enter the correct path.')
                     self.pathInput.clear()
